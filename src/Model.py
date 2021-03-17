@@ -1,10 +1,11 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten, Input, Softmax
 
+
 class MindReader(tf.keras.Model):
     def __init__(self, out_dim, **kwargs):
         super(MindReader, self).__init__(**kwargs)
-        self.d1 = Dense(units=out_dim,use_bias=False)
+        self.d1 = Dense(units=out_dim, use_bias=False)
         self.sm = Softmax()
 
     def call(self, inputs: tf.Tensor, softmax: bool = True) -> tf.Tensor:
@@ -18,7 +19,7 @@ class MindReader(tf.keras.Model):
         z = self.d1(inputs)
         return self.sm(z) if softmax else z
 
-    def saliency(self,inputs,category=None):
+    def saliency(self, inputs, category=None):
         """
         OBS! if batch_size is larger than one, saliency
         map is computed by aggregating loss, then calculating
@@ -30,13 +31,13 @@ class MindReader(tf.keras.Model):
                        None => argmax class (i.e predicted class)
         """
         with tf.GradientTape() as tape:
-            pred = self(inputs=inputs,softmax=False)
+            pred = self(inputs=inputs, softmax=False)
 
             if category is None:
-                #score = tf.reduce_max(pred,axis=-1)
+                # score = tf.reduce_max(pred,axis=-1)
                 category = tf.math.argmax(pred[0])
-                score = pred[0,category]
+                score = pred[0, category]
             else:
-                score = pred[:,category]
-            
+                score = pred[:, category]
+
         return tape.gradient(score, inputs), category

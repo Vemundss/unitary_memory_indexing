@@ -2,8 +2,8 @@
 Code starting point taken from (17/03-2021):
 https://stackoverflow.com/questions/9401658/how-to-animate-a-scatter-plot
 """
-import matplotlib
-matplotlib.use('nbAgg')
+#import matplotlib
+#matplotlib.use('nbAgg') # Tried to use same backend as jupyter notebook
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
@@ -55,7 +55,8 @@ class AnimatedScatter(object):
         color_idxs = np.argmax(self.means @ self.weight_data[0],axis=0) # shapes (4,2) @ (2,4)
         cluster_N = int(data.shape[0] / 4)
         self.weight_arrows = []
-        self.rejection_projection_arrows = []
+        self.rejection_arrows = []
+        self.projection_arrows = []
         for color, mean, i in zip(colors, self.means, range(len(colors))):
             self.ax.scatter(
                 data[i * cluster_N : (i + 1) * cluster_N, 0],
@@ -81,7 +82,7 @@ class AnimatedScatter(object):
             )
 
             proj, reject = projection_rejection(self.weight_data[0, :, i],mean)
-            rej_proj_arrow = self.ax.arrow(
+            rej_arrow = self.ax.arrow(
                 *proj,
                 *reject,
                 length_includes_head=True,
@@ -89,8 +90,19 @@ class AnimatedScatter(object):
                 color=colors[color_idxs[i]],#rscolor=(1, 0, 0, 0.5),  # semi-transparent green arrow
                 alpha=0.35,
             )
+
+            proj_arrow = self.ax.arrow(
+                0,
+                0,
+                *proj,
+                length_includes_head=True,
+                width=0.01,
+                color=colors[color_idxs[i]],#rscolor=(1, 0, 0, 0.5),  # semi-transparent green arrow
+                alpha=0.35,
+            )
             self.weight_arrows.append(warrow)
-            self.rejection_projection_arrows.append(rej_proj_arrow)
+            self.rejection_arrows.append(rej_arrow)
+            self.projection_arrows.append(proj_arrow)
         self.ax.grid("on")
         self.ax.set_title('Loss={}'.format(self.loss_history[0]))
 
@@ -100,7 +112,8 @@ class AnimatedScatter(object):
         color_idxs = np.argmax(self.means @ self.weight_data[k],axis=0) # shapes (4,2) @ (2,4)
         for i in range(4):
             self.weight_arrows.pop(0).remove()  # delete arrow
-            self.rejection_projection_arrows.pop(0).remove()
+            self.rejection_arrows.pop(0).remove()
+            self.projection_arrows.pop(0).remove()
             warrow = self.ax.arrow(
                 0,
                 0,
@@ -111,7 +124,7 @@ class AnimatedScatter(object):
             )
 
             proj, reject = projection_rejection(self.weight_data[k, :, i],self.means[i])
-            rej_proj_arrow = self.ax.arrow(
+            rej_arrow = self.ax.arrow(
                 *proj,
                 *reject,
                 length_includes_head=True,
@@ -119,8 +132,19 @@ class AnimatedScatter(object):
                 color=colors[color_idxs[i]],#rscolor=(1, 0, 0, 0.5),  # semi-transparent green arrow
                 alpha=0.5,
             )
+
+            proj_arrow = self.ax.arrow(
+                0,
+                0,
+                *proj,
+                length_includes_head=True,
+                width=0.01,
+                color=colors[color_idxs[i]],#rscolor=(1, 0, 0, 0.5),  # semi-transparent green arrow
+                alpha=0.35,
+            )
             self.weight_arrows.append(warrow)
-            self.rejection_projection_arrows.append(rej_proj_arrow)
+            self.rejection_arrows.append(rej_arrow)
+            self.projection_arrows.append(proj_arrow)
 
         self.ax.set_title('Loss={}'.format(self.loss_history[k]))
 

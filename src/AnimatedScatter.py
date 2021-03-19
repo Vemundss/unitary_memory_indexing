@@ -9,6 +9,14 @@ import matplotlib.animation as animation
 import numpy as np
 
 
+def projection_rejection(u,v):
+    """
+    projection of u on v, and rejection of u from v
+    """
+    proj = ((u@v)/(v@v)) * v
+    reject = u - proj
+    return proj, reject
+
 class AnimatedScatter(object):
     """An animated scatter plot using matplotlib.animations.FuncAnimation."""
 
@@ -21,9 +29,11 @@ class AnimatedScatter(object):
         self.cluster_data = cluster_data
         self.weight_data = weight_data
         self.loss_history = loss_history
+
         # Setup the figure and axes...
         self.fig, self.ax = plt.subplots()
         # Then setup FuncAnimation.
+
         self.save_count=weight_data.shape[0]
         self.animation = animation.FuncAnimation(
             self.fig,
@@ -37,15 +47,15 @@ class AnimatedScatter(object):
 
     def setup_plot(self):
         """Initial drawing of the scatter plot."""
-        init_weights = self.weight_data
         data = self.cluster_data
         colors = ["red", "green", "blue", "orange"]
         self.means = np.mean(
             np.reshape(data, (4, int(data.shape[0] / 4), data.shape[-1])), axis=1
         )
-        color_idxs = np.argmax(self.means @ init_weights[0],axis=0) # shapes (4,2) @ (2,4)
+        color_idxs = np.argmax(self.means @ self.weight_data[0],axis=0) # shapes (4,2) @ (2,4)
         cluster_N = int(data.shape[0] / 4)
         self.weight_arrows = []
+        self.rejection_projection_arrows = []
         for color, mean, i in zip(colors, self.means, range(len(colors))):
             self.ax.scatter(
                 data[i * cluster_N : (i + 1) * cluster_N, 0],
@@ -64,12 +74,23 @@ class AnimatedScatter(object):
             warrow = self.ax.arrow(
                 0,
                 0,
-                *init_weights[0, :, i],
+                *self.weight_data[0, :, i],
                 length_includes_head=True,
                 width=0.01,
                 color=colors[color_idxs[i]],#rscolor=(1, 0, 0, 0.5),  # semi-transparent green arrow
             )
+
+            proj, reject = projection_rejection(self.weight_data[0, :, i],mean)
+            rej_proj_arrow = self.ax.arrow(
+                *proj,
+                *reject,
+                length_includes_head=True,
+                width=0.01,
+                color=colors[color_idxs[i]],#rscolor=(1, 0, 0, 0.5),  # semi-transparent green arrow
+                alpha=0.35,
+            )
             self.weight_arrows.append(warrow)
+            self.rejection_projection_arrows.append(rej_proj_arrow)
         self.ax.grid("on")
         self.ax.set_title('Loss={}'.format(self.loss_history[0]))
 
@@ -79,6 +100,7 @@ class AnimatedScatter(object):
         color_idxs = np.argmax(self.means @ self.weight_data[k],axis=0) # shapes (4,2) @ (2,4)
         for i in range(4):
             self.weight_arrows.pop(0).remove()  # delete arrow
+            self.rejection_projection_arrows.pop(0).remove()
             warrow = self.ax.arrow(
                 0,
                 0,
@@ -87,7 +109,18 @@ class AnimatedScatter(object):
                 width=0.01,
                 color=colors[color_idxs[i]],#color=(1, 0, 0, 0.5),
             )
+
+            proj, reject = projection_rejection(self.weight_data[k, :, i],self.means[i])
+            rej_proj_arrow = self.ax.arrow(
+                *proj,
+                *reject,
+                length_includes_head=True,
+                width=0.01,
+                color=colors[color_idxs[i]],#rscolor=(1, 0, 0, 0.5),  # semi-transparent green arrow
+                alpha=0.5,
+            )
             self.weight_arrows.append(warrow)
+            self.rejection_projection_arrows.append(rej_proj_arrow)
 
         self.ax.set_title('Loss={}'.format(self.loss_history[k]))
 
